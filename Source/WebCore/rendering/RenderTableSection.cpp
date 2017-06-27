@@ -274,7 +274,6 @@ int RenderTableSection::calcRowLogicalHeight()
     m_rowPos[0] = spacing;
 
     unsigned totalRows = m_grid.size();
-
     for (unsigned r = 0; r < totalRows; r++) {
         m_grid[r].baseline = 0;
         LayoutUnit baselineDescent = 0;
@@ -503,7 +502,7 @@ int RenderTableSection::distributeExtraLogicalHeightToRows(int extraLogicalHeigh
     return extraLogicalHeight - remainingExtraLogicalHeight;
 }
 
-void RenderTableSection::layoutRows()
+void RenderTableSection::layoutRows(int headHeight, int footHeight)
 {
 #ifndef NDEBUG
     SetLayoutNeededForbiddenScope layoutForbiddenScope(this);
@@ -519,8 +518,33 @@ void RenderTableSection::layoutRows()
 
     int vspacing = table()->vBorderSpacing();
     unsigned nEffCols = table()->numEffCols();
-
-    LayoutStateMaintainer statePusher(view(), this, locationOffset(), hasTransform() || style()->isFlippedBlocksWritingMode());
+    LayoutSize adjustOffset(locationOffset().width(), locationOffset().height());
+    if(headHeight > 0 && (adjustOffset.height().toInt() % headHeight) != 0){
+        // repeat header: location offset height need to be integral multiple of head height
+        adjustOffset.setHeight(adjustOffset.height().toInt() - (adjustOffset.height().toInt() % headHeight));
+    }
+    LayoutStateMaintainer statePusher(view(), this, adjustOffset, hasTransform() || style()->isFlippedBlocksWritingMode());
+ 
+    // make sure that rows do not overlap a page break
+    if (view()->layoutState()->pageLogicalHeight()) {
+        int pageOffset = 0;
+        for(int r = 0; r < totalRows; ++r) {
+            const int childLogicalHeight = m_rowPos[r + 1] - m_rowPos[r] - (m_grid[r].rowRenderer ? vspacing : 0);
+            LayoutState* layoutState = view()->layoutState();
+            const int pageLogicalHeight = layoutState->m_pageLogicalHeight;
+            if (childLogicalHeight < pageLogicalHeight - footHeight) {
+                const LayoutSize delta = layoutState->m_layoutOffset - layoutState->m_pageOffset;
+                const int logicalOffset = m_rowPos[r] + pageOffset;
+                const int offset = isHorizontalWritingMode() ? delta.height().toInt() : delta.width().toInt();
+                const int remainingLogicalHeight = (pageLogicalHeight - (offset + logicalOffset) % pageLogicalHeight) % pageLogicalHeight;
+                if (remainingLogicalHeight - footHeight < childLogicalHeight) {
+                    pageOffset += remainingLogicalHeight + headHeight;
+                }
+            }
+            m_rowPos[r] += pageOffset;
+        }
+        m_rowPos[totalRows] += pageOffset;
+    }
 
     for (unsigned r = 0; r < totalRows; r++) {
         // Set the row's x/y position and width/height.
