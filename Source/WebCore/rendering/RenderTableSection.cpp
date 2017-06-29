@@ -520,8 +520,8 @@ void RenderTableSection::layoutRows(int headHeight, int footHeight)
     unsigned nEffCols = table()->numEffCols();
     LayoutSize adjustOffset(locationOffset().width(), locationOffset().height());
     if(headHeight > 0 && (adjustOffset.height().toInt() % headHeight) != 0){
-        // repeat header: location offset height need to be integral multiple of head height
-        adjustOffset.setHeight(adjustOffset.height().toInt() - (adjustOffset.height().toInt() % headHeight));
+        // repeat header: offset needs equal to headheight
+        adjustOffset.setHeight(headHeight);
     }
     LayoutStateMaintainer statePusher(view(), this, adjustOffset, hasTransform() || style()->isFlippedBlocksWritingMode());
  
