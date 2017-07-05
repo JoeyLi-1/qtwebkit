@@ -1108,7 +1108,7 @@ bool RenderTableCell::alignLeftRightBorderPaintRect(int& leftXOffset, int& right
     int right = cachedCollapsedRightBorder(styleForTopCell).width();
     leftXOffset = max<int>(leftXOffset, left);
     rightXOffset = max<int>(rightXOffset, right);
-    if (colSpan() > 1)
+    if (rowSpan() > 1)
         return false;
     return true;
 }
@@ -1120,7 +1120,7 @@ bool RenderTableCell::alignTopBottomBorderPaintRect(int& topYOffset, int& bottom
     int bottom = cachedCollapsedBottomBorder(styleForBottomCell).width();
     topYOffset = max<int>(topYOffset, top);
     bottomYOffset = max<int>(bottomYOffset, bottom);
-    if (rowSpan() > 1)
+    if (colSpan() > 1)
         return false;
     return true;
 }
